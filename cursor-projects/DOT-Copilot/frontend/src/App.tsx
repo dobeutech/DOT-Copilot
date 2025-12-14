@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { Layout } from './components';
+import { useToast } from './hooks/useToast';
 import {
   Index,
   ResetPassword,
@@ -19,8 +20,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 function App() {
+  const { ToastContainer } = useToast();
+
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Index />} />

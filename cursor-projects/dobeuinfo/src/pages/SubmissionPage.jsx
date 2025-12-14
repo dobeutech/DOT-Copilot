@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import SEO from '../components/SEO'
+import { submitProduct } from '../services/api'
 
 function SubmissionPage() {
   const [formData, setFormData] = useState({
@@ -68,10 +69,8 @@ function SubmissionPage() {
 
     setStatus('submitting')
     
-    // TODO: Replace with actual submission endpoint
-    // For now, simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await submitProduct(formData)
       setStatus('success')
       setFormData({
         companyName: '',
@@ -83,6 +82,7 @@ function SubmissionPage() {
         demoVideo: ''
       })
     } catch (error) {
+      console.error('Submission error:', error)
       setStatus('error')
     }
   }

@@ -1,0 +1,4 @@
+# This directory contains database migrations
+# Run `npx prisma migrate dev` to create migrations
+# Run `npx prisma migrate deploy` in production
+

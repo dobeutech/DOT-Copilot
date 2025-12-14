@@ -6,6 +6,9 @@ function CTASection() {
       <div className="cta-readers">
         <h2 className="cta-title">For Readers</h2>
         <p className="cta-text">Explore reviews. Compare solutions. Skip the regret.</p>
+        <Link to="/reviews" className="cta-button">
+          Browse Reviews
+        </Link>
       </div>
       <div className="cta-vendors">
         <h2 className="cta-title">For Vendors / Builders</h2>

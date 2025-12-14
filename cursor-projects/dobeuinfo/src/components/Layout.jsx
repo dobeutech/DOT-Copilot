@@ -9,7 +9,8 @@ function Layout({ children }) {
             Dobeu.info
           </Link>
           <div className="nav-links">
-            <Link to="/">Reviews</Link>
+            <Link to="/">Home</Link>
+            <Link to="/reviews">Reviews</Link>
             <Link to="/submit">Submit Product</Link>
           </div>
         </nav>

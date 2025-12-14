@@ -11,6 +11,8 @@ dotenv.config();
 import { initSentry, captureException, Sentry } from './services/sentry';
 import { logInfo, logError } from './services/logger';
 import { requestLogger, errorLogger } from './middleware/requestLogger';
+import { errorHandler } from './middleware/errorHandler';
+import { performanceMiddleware } from './utils/performance';
 
 // Initialize Sentry
 initSentry();
@@ -26,6 +28,7 @@ import notificationRoutes from './routes/notifications';
 import completionRecordRoutes from './routes/completionRecords';
 import quizRoutes from './routes/quizzes';
 import uploadRoutes from './routes/uploads';
+import docsRoutes from './routes/docs';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
@@ -67,6 +70,9 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Performance monitoring
+app.use(performanceMiddleware);
+
 // Request logging
 app.use(requestLogger);
 
@@ -105,6 +111,22 @@ app.get('/health/live', (req: Request, res: Response) => {
   res.json({ status: 'alive' });
 });
 
+// Metrics endpoint (protected in production)
+app.get('/metrics', (req: Request, res: Response) => {
+  if (process.env.NODE_ENV === 'production' && !req.headers.authorization) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const { getMetrics } = require('./utils/performance');
+  res.json({ metrics: getMetrics() });
+});
+
+// API Documentation
+if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_DOCS === 'true') {
+  app.use('/api-docs', docsRoutes);
+  logInfo('API documentation available at /api-docs');
+}
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -121,16 +143,8 @@ app.use('/api/uploads', uploadRoutes);
 // Error logging middleware
 app.use(errorLogger);
 
-// Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  logError('Unhandled error', err);
-  captureException(err, { path: req.path, method: req.method });
-
-  res.status(500).json({
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined,
-  });
-});
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

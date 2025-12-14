@@ -153,6 +153,8 @@ After seeding the database:
 
 ## API Documentation
 
+Interactive API documentation is available at `/api-docs` when running the backend server (development mode or with `ENABLE_DOCS=true`).
+
 ### Authentication
 
 | Endpoint | Method | Description |
@@ -229,6 +231,9 @@ Configure these secrets in GitHub:
 
 ## Production Checklist
 
+See [PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md) for a comprehensive deployment checklist.
+
+Quick checklist:
 - [ ] Set strong JWT secrets (32+ characters)
 - [ ] Configure production DATABASE_URL
 - [ ] Set up SSL/TLS
@@ -238,6 +243,8 @@ Configure these secrets in GitHub:
 - [ ] Set up S3 bucket for file storage
 - [ ] Enable database backups
 - [ ] Configure log aggregation
+- [ ] Run database migrations: `npx prisma migrate deploy`
+- [ ] Review API documentation at `/api-docs`
 
 ## Environment Variables
 

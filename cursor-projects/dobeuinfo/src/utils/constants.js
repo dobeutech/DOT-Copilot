@@ -8,6 +8,7 @@ export const COMPANY_NAME = 'Dobeu Tech Solutions'
 // Routes
 export const ROUTES = {
   HOME: '/',
+  REVIEWS: '/reviews',
   SUBMIT: '/submit',
 }
 
