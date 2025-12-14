@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cursor.composer.cmdPFilePicker2": true,
+		"cursor.general.gitGraphIndexing": "enabled",
+		"cursor.general.enableShadowWorkspace": true,
+		"cursor.general.disableHttp1SSE": false,
+		"cursor.cpp.enablePartialAccepts": true,
+		"cursor.composer.shouldShowMarkdownHoverParticipantActions2": true
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"uri": "vscode-remote://ssh-remote+69.197.174.25/home/jeremyw"
+		},
+		{
+			"uri": "vscode-remote://ssh-remote+69.197.174.25/etc/nginx"
+		}
+	],
+	"remoteAuthority": "ssh-remote+69.197.174.25",
+	"settings": {}
+}
