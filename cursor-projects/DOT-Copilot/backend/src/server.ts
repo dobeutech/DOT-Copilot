@@ -10,12 +10,14 @@ dotenv.config();
 // Import services first
 import { initSentry, captureException, Sentry } from './services/sentry';
 import { logInfo, logError } from './services/logger';
+import { initApplicationInsights } from './services/applicationInsights';
 import { requestLogger, errorLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
 import { performanceMiddleware } from './utils/performance';
 
-// Initialize Sentry
+// Initialize monitoring services
 initSentry();
+initApplicationInsights();
 
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';

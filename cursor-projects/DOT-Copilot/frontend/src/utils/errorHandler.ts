@@ -34,7 +34,7 @@ export function getErrorMessage(error: unknown): string {
       return 'Too many requests. Please try again later.';
     }
 
-    if (error.response?.status >= 500) {
+    if (error.response?.status && error.response.status >= 500) {
       return 'Server error. Please try again later.';
     }
 

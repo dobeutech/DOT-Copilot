@@ -1,4 +1,4 @@
-import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
+import { BlobServiceClient, ContainerClient, BlobSASPermissions } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 
@@ -60,7 +60,7 @@ class AzureStorageService {
     }
   }
 
-  async getSignedUrl(blobName: string, expiresInMinutes: number = 60): Promise<string | null> {
+  async getSignedDownloadUrl(blobName: string, expiresInMinutes: number = 60): Promise<string | null> {
     if (!this.isConfigured || !this.containerClient) {
       return null;
     }
@@ -73,7 +73,7 @@ class AzureStorageService {
       expiresOn.setMinutes(expiresOn.getMinutes() + expiresInMinutes);
 
       const sasToken = await blockBlobClient.generateSasUrl({
-        permissions: 'r',
+        permissions: BlobSASPermissions.parse('r'),
         expiresOn,
       });
 

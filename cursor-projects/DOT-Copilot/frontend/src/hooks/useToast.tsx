@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Toast, ToastProps } from '../components/Toast';
+import { Toast } from '../components/Toast';
+import type { ToastProps } from '../components/Toast';
 
 interface ToastState extends Omit<ToastProps, 'onClose'> {
   id: string;

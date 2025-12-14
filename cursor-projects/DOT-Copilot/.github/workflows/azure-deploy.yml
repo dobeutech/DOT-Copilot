@@ -1,0 +1,251 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [main, staging, develop]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  NODE_VERSION: '20.x'
+  AZURE_WEBAPP_NAME_BACKEND: dot-copilot-backend
+
+# =============================================================================
+# Determine environment based on branch
+# =============================================================================
+jobs:
+  set-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+    steps:
+      - name: Set environment
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+
+  # =============================================================================
+  # Build and Test
+  # =============================================================================
+  build-test:
+    runs-on: ubuntu-latest
+    needs: set-environment
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      # Backend
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test -- --passWithNoTests
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      # Frontend
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test -- --passWithNoTests
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.API_BASE_URL }}
+
+      # Upload artifacts
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: |
+            backend/dist
+            backend/package.json
+            backend/package-lock.json
+            backend/prisma
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+  # =============================================================================
+  # Deploy Backend to Azure App Service
+  # =============================================================================
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: [set-environment, build-test]
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    environment: ${{ needs.set-environment.outputs.environment }}
+    
+    steps:
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-dist
+          path: backend
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install production dependencies
+        working-directory: backend
+        run: npm ci --only=production
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Run database migrations
+        working-directory: backend
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME_BACKEND }}-${{ needs.set-environment.outputs.environment }}
+          slot-name: ${{ needs.set-environment.outputs.environment == 'prod' && 'staging' || 'production' }}
+          package: ./backend
+
+      - name: Swap staging slot to production
+        if: needs.set-environment.outputs.environment == 'prod'
+        run: |
+          az webapp deployment slot swap \
+            --name ${{ env.AZURE_WEBAPP_NAME_BACKEND }}-prod \
+            --resource-group rg-dot-copilot-prod \
+            --slot staging \
+            --target-slot production
+
+  # =============================================================================
+  # Deploy Frontend to Azure Static Web Apps
+  # =============================================================================
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: [set-environment, build-test]
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    environment: ${{ needs.set-environment.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: 'upload'
+          app_location: '/frontend'
+          output_location: 'dist'
+          skip_app_build: true
+
+  # =============================================================================
+  # Close Pull Request - Clean up preview environments
+  # =============================================================================
+  close-pr:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Close Static Web Apps Preview
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: 'close'
+
+  # =============================================================================
+  # Health Check
+  # =============================================================================
+  health-check:
+    runs-on: ubuntu-latest
+    needs: [set-environment, deploy-backend, deploy-frontend]
+    environment: ${{ needs.set-environment.outputs.environment }}
+    
+    steps:
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Check backend health
+        run: |
+          BACKEND_URL="${{ secrets.BACKEND_URL }}/health"
+          for i in {1..5}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" $BACKEND_URL)
+            if [ $response == "200" ]; then
+              echo "Backend is healthy!"
+              exit 0
+            fi
+            echo "Attempt $i: Backend returned $response, retrying..."
+            sleep 10
+          done
+          echo "Backend health check failed"
+          exit 1
+
+      - name: Check frontend availability
+        run: |
+          FRONTEND_URL="${{ secrets.FRONTEND_URL }}"
+          response=$(curl -s -o /dev/null -w "%{http_code}" $FRONTEND_URL)
+          if [ $response == "200" ]; then
+            echo "Frontend is available!"
+          else
+            echo "Frontend check failed with status $response"
+            exit 1
+          fi

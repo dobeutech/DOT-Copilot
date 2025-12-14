@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "value": "prod"
+    },
+    "appName": {
+      "value": "dot-copilot"
+    },
+    "location": {
+      "value": "eastus"
+    },
+    "dbAdminUsername": {
+      "value": "dotcopilotadmin"
+    },
+    "dbAdminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.KeyVault/vaults/{keyvault-name}"
+        },
+        "secretName": "DB-PASSWORD"
+      }
+    },
+    "jwtSecret": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.KeyVault/vaults/{keyvault-name}"
+        },
+        "secretName": "JWT-SECRET"
+      }
+    },
+    "jwtRefreshSecret": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.KeyVault/vaults/{keyvault-name}"
+        },
+        "secretName": "JWT-REFRESH-SECRET"
+      }
+    },
+    "repositoryUrl": {
+      "value": ""
+    },
+    "repositoryBranch": {
+      "value": "main"
+    },
+    "enableStagingSlot": {
+      "value": true
+    }
+  }
+}
+

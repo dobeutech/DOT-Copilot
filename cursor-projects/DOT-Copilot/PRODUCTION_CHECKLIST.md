@@ -2,6 +2,21 @@
 
 ## Pre-Deployment
 
+### Azure-Specific Setup
+
+If deploying to Azure, see [AZURE_DEPLOYMENT.md](./AZURE_DEPLOYMENT.md) for complete Azure setup guide.
+
+Quick Azure checklist:
+- [ ] Azure subscription active
+- [ ] Azure CLI installed and logged in
+- [ ] Bicep CLI installed (`az bicep install`)
+- [ ] Resource group created
+- [ ] Infrastructure deployed via Bicep template
+- [ ] Key Vault secrets configured
+- [ ] App Service settings verified
+- [ ] Database migrations run
+- [ ] Application Insights configured
+
 ### Environment Variables
 - [ ] Set `NODE_ENV=production`
 - [ ] Configure `DATABASE_URL` with production PostgreSQL connection

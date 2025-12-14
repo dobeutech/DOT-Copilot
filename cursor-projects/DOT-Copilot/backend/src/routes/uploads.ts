@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import multer from 'multer';
 import { authenticate, requireRole, AuthenticatedRequest } from '../middleware/auth';
 import storageService from '../services/storage';
+import azureStorageService from '../services/azureStorage';
 
 const router = Router();
 
@@ -41,12 +42,16 @@ router.post('/', requireRole('ADMIN', 'SUPERVISOR'), upload.single('file'), asyn
       return res.status(400).json({ error: 'No file provided' });
     }
 
-    if (!storageService.isReady()) {
+    // Use Azure Storage if configured, otherwise fall back to S3
+    const useAzure = azureStorageService.isReady();
+    const storage = useAzure ? azureStorageService : storageService;
+    
+    if (!storage.isReady()) {
       return res.status(503).json({ error: 'Storage service not configured' });
     }
 
     const folder = req.body.folder || 'uploads';
-    const result = await storageService.uploadFile(
+    const result = await storage.uploadFile(
       req.file.buffer,
       req.file.originalname,
       req.file.mimetype,
@@ -57,10 +62,13 @@ router.post('/', requireRole('ADMIN', 'SUPERVISOR'), upload.single('file'), asyn
       return res.status(500).json({ error: 'Failed to upload file' });
     }
 
+    // Handle different return types from S3 vs Azure
+    const fileKey = useAzure ? (result as { url: string; blobName: string }).blobName : (result as { url: string; key: string }).key;
+
     res.status(201).json({
       data: {
         url: result.url,
-        key: result.key,
+        key: fileKey,
         originalName: req.file.originalname,
         size: req.file.size,
         contentType: req.file.mimetype,
@@ -77,11 +85,20 @@ router.get('/download/:key(*)', async (req: AuthenticatedRequest, res: Response)
   try {
     const { key } = req.params;
     
-    if (!storageService.isReady()) {
+    // Use Azure Storage if configured, otherwise fall back to S3
+    const useAzure = azureStorageService.isReady();
+    const storage = useAzure ? azureStorageService : storageService;
+    
+    if (!storage.isReady()) {
       return res.status(503).json({ error: 'Storage service not configured' });
     }
 
-    const url = await storageService.getSignedDownloadUrl(key);
+    let url: string | null = null;
+    if (useAzure) {
+      url = await (storage as typeof azureStorageService).getSignedDownloadUrl(key);
+    } else {
+      url = await (storage as typeof storageService).getSignedDownloadUrl(key);
+    }
     
     if (!url) {
       return res.status(404).json({ error: 'File not found' });
@@ -99,11 +116,14 @@ router.delete('/:key(*)', requireRole('ADMIN'), async (req: AuthenticatedRequest
   try {
     const { key } = req.params;
     
-    if (!storageService.isReady()) {
+    // Use Azure Storage if configured, otherwise fall back to S3
+    const storage = azureStorageService.isReady() ? azureStorageService : storageService;
+    
+    if (!storage.isReady()) {
       return res.status(503).json({ error: 'Storage service not configured' });
     }
 
-    const success = await storageService.deleteFile(key);
+    const success = await storage.deleteFile(key);
     
     if (!success) {
       return res.status(500).json({ error: 'Failed to delete file' });

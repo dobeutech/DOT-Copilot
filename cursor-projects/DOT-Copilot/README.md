@@ -205,6 +205,23 @@ npm run test:coverage
 
 ## Deployment
 
+### Azure (Recommended for Production)
+
+See [AZURE_DEPLOYMENT.md](./AZURE_DEPLOYMENT.md) for complete Azure deployment guide.
+
+Quick start:
+```bash
+# Deploy infrastructure
+./infrastructure/azure/deploy.sh \
+  rg-dot-copilot-prod \
+  eastus \
+  prod \
+  postgresadmin \
+  "YourPassword123!" \
+  "your-32-char-jwt-secret" \
+  "your-32-char-refresh-secret"
+```
+
 ### Docker
 
 ```bash
@@ -220,14 +237,15 @@ docker compose -f docker-compose.yml up -d
 GitHub Actions workflows are included for:
 - Linting and testing on PR
 - Docker image building
-- Deployment to staging/production
+- Azure deployment (see `.github/workflows/azure-deploy.yml`)
+- Generic deployment to staging/production
 
 Configure these secrets in GitHub:
+- `AZURE_CREDENTIALS` (for Azure deployment)
 - `DATABASE_URL`
 - `JWT_SECRET`
 - `JWT_REFRESH_SECRET`
-- `VERCEL_TOKEN` (for frontend)
-- `RAILWAY_TOKEN` (for backend)
+- `API_BASE_URL` (for frontend)
 
 ## Production Checklist
 

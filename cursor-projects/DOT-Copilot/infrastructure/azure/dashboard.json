@@ -1,0 +1,267 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "type": "string",
+      "defaultValue": "dot-copilot"
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "prod"
+    },
+    "appInsightsResourceId": {
+      "type": "string"
+    },
+    "backendAppResourceId": {
+      "type": "string"
+    },
+    "postgresResourceId": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "dashboardName": "[concat(parameters('appName'), '-dashboard-', parameters('environment'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Portal/dashboards",
+      "apiVersion": "2020-09-01-preview",
+      "name": "[variables('dashboardName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "lenses": [
+          {
+            "order": 0,
+            "parts": [
+              {
+                "position": {
+                  "x": 0,
+                  "y": 0,
+                  "colSpan": 6,
+                  "rowSpan": 4
+                },
+                "metadata": {
+                  "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+                  "inputs": [
+                    {
+                      "name": "resourceId",
+                      "value": "[parameters('backendAppResourceId')]"
+                    },
+                    {
+                      "name": "metricName",
+                      "value": "Requests"
+                    },
+                    {
+                      "name": "title",
+                      "value": "Request Count"
+                    }
+                  ]
+                }
+              },
+              {
+                "position": {
+                  "x": 6,
+                  "y": 0,
+                  "colSpan": 6,
+                  "rowSpan": 4
+                },
+                "metadata": {
+                  "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+                  "inputs": [
+                    {
+                      "name": "resourceId",
+                      "value": "[parameters('backendAppResourceId')]"
+                    },
+                    {
+                      "name": "metricName",
+                      "value": "HttpResponseTime"
+                    },
+                    {
+                      "name": "title",
+                      "value": "Response Time"
+                    }
+                  ]
+                }
+              },
+              {
+                "position": {
+                  "x": 0,
+                  "y": 4,
+                  "colSpan": 4,
+                  "rowSpan": 4
+                },
+                "metadata": {
+                  "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+                  "inputs": [
+                    {
+                      "name": "resourceId",
+                      "value": "[parameters('backendAppResourceId')]"
+                    },
+                    {
+                      "name": "metricName",
+                      "value": "Http5xx"
+                    },
+                    {
+                      "name": "title",
+                      "value": "Server Errors (5xx)"
+                    }
+                  ]
+                }
+              },
+              {
+                "position": {
+                  "x": 4,
+                  "y": 4,
+                  "colSpan": 4,
+                  "rowSpan": 4
+                },
+                "metadata": {
+                  "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+                  "inputs": [
+                    {
+                      "name": "resourceId",
+                      "value": "[parameters('backendAppResourceId')]"
+                    },
+                    {
+                      "name": "metricName",
+                      "value": "Http4xx"
+                    },
+                    {
+                      "name": "title",
+                      "value": "Client Errors (4xx)"
+                    }
+                  ]
+                }
+              },
+              {
+                "position": {
+                  "x": 8,
+                  "y": 4,
+                  "colSpan": 4,
+                  "rowSpan": 4
+                },
+                "metadata": {
+                  "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+                  "inputs": [
+                    {
+                      "name": "resourceId",
+                      "value": "[parameters('backendAppResourceId')]"
+                    },
+                    {
+                      "name": "metricName",
+                      "value": "HealthCheckStatus"
+                    },
+                    {
+                      "name": "title",
+                      "value": "Health Check Status"
+                    }
+                  ]
+                }
+              },
+              {
+                "position": {
+                  "x": 0,
+                  "y": 8,
+                  "colSpan": 4,
+                  "rowSpan": 4
+                },
+                "metadata": {
+                  "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+                  "inputs": [
+                    {
+                      "name": "resourceId",
+                      "value": "[parameters('postgresResourceId')]"
+                    },
+                    {
+                      "name": "metricName",
+                      "value": "cpu_percent"
+                    },
+                    {
+                      "name": "title",
+                      "value": "Database CPU %"
+                    }
+                  ]
+                }
+              },
+              {
+                "position": {
+                  "x": 4,
+                  "y": 8,
+                  "colSpan": 4,
+                  "rowSpan": 4
+                },
+                "metadata": {
+                  "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+                  "inputs": [
+                    {
+                      "name": "resourceId",
+                      "value": "[parameters('postgresResourceId')]"
+                    },
+                    {
+                      "name": "metricName",
+                      "value": "memory_percent"
+                    },
+                    {
+                      "name": "title",
+                      "value": "Database Memory %"
+                    }
+                  ]
+                }
+              },
+              {
+                "position": {
+                  "x": 8,
+                  "y": 8,
+                  "colSpan": 4,
+                  "rowSpan": 4
+                },
+                "metadata": {
+                  "type": "Extension/Microsoft_Azure_Monitoring/PartType/MetricsChartPart",
+                  "inputs": [
+                    {
+                      "name": "resourceId",
+                      "value": "[parameters('postgresResourceId')]"
+                    },
+                    {
+                      "name": "metricName",
+                      "value": "active_connections"
+                    },
+                    {
+                      "name": "title",
+                      "value": "Database Connections"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "metadata": {
+          "model": {
+            "timeRange": {
+              "value": {
+                "relative": {
+                  "duration": 24,
+                  "timeUnit": 1
+                }
+              },
+              "type": "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+            }
+          }
+        }
+      },
+      "tags": {
+        "environment": "[parameters('environment')]",
+        "application": "[parameters('appName')]"
+      }
+    }
+  ],
+  "outputs": {
+    "dashboardId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Portal/dashboards', variables('dashboardName'))]"
+    }
+  }
+}
+
