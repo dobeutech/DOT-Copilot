@@ -1,0 +1,229 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  DRIVER
+  SUPERVISOR
+  ADMIN
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  name              String?
+  passwordHash      String   @map("password_hash")
+  role              UserRole @default(DRIVER)
+  fleetId           String?  @map("fleet_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  fleet             Fleet?   @relation(fields: [fleetId], references: [id])
+  assignments       Assignment[]
+  notifications     Notification[]
+  completionRecords CompletionRecord[]
+  quizResponses     QuizResponse[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model Fleet {
+  id                           String   @id @default(cuid())
+  companyName                  String   @map("company_name")
+  locations                    String?
+  cargoType                    String?  @map("cargo_type")
+  cdlStatus                    String?  @map("cdl_status")
+  vehicleTypes                 String?  @map("vehicle_types")
+  keyRiskAreas                 String?  @map("key_risk_areas")
+  operationType                String?  @map("operation_type")
+  statesOfOperation            String?  @map("states_of_operation")
+  onboardingCompleted          Boolean  @default(false) @map("onboarding_completed")
+  complianceProfileConfigured  Boolean  @default(false) @map("compliance_profile_configured")
+  createdAt                    DateTime @default(now()) @map("created_at")
+  updatedAt                    DateTime @updatedAt @map("updated_at")
+
+  users            User[]
+  trainingPrograms TrainingProgram[]
+  modules          Module[]
+  lessons          Lesson[]
+  assignments      Assignment[]
+  notifications    Notification[]
+  completionRecords CompletionRecord[]
+  auditLogs        AuditLog[]
+
+  @@map("fleets")
+}
+
+model TrainingProgram {
+  id            String   @id @default(cuid())
+  programName   String   @map("program_name")
+  description   String?
+  isRecommended Boolean  @default(false) @map("is_recommended")
+  fleetId       String   @map("fleet_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  fleet       Fleet        @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  modules     Module[]
+  assignments Assignment[]
+
+  @@map("training_programs")
+}
+
+model Module {
+  id                String   @id @default(cuid())
+  moduleName        String   @map("module_name")
+  description       String?
+  sequenceOrder     Int      @default(0) @map("sequence_order")
+  fleetId           String   @map("fleet_id")
+  trainingProgramId String   @map("training_program_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  fleet            Fleet           @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  trainingProgram  TrainingProgram @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+  lessons          Lesson[]
+  assignments      Assignment[]
+  completionRecords CompletionRecord[]
+
+  @@map("modules")
+}
+
+model Lesson {
+  id                 String   @id @default(cuid())
+  lessonName         String   @map("lesson_name")
+  content            String?
+  contentType        String?  @map("content_type")
+  fileUrl            String?  @map("file_url")
+  sequenceOrder      Int      @default(0) @map("sequence_order")
+  requiresEsignature Boolean  @default(false) @map("requires_esignature")
+  fleetId            String   @map("fleet_id")
+  moduleId           String   @map("module_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  fleet             Fleet              @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  module            Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quizQuestions     QuizQuestion[]
+  completionRecords CompletionRecord[]
+
+  @@map("lessons")
+}
+
+model QuizQuestion {
+  id            String   @id @default(cuid())
+  questionText  String   @map("question_text")
+  answerOptions String   @map("answer_options") // JSON string of options
+  correctAnswer String   @map("correct_answer")
+  sequenceOrder Int      @default(0) @map("sequence_order")
+  lessonId      String   @map("lesson_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  responses QuizResponse[]
+
+  @@map("quiz_questions")
+}
+
+model QuizResponse {
+  id                  String   @id @default(cuid())
+  selectedAnswer      String   @map("selected_answer")
+  isCorrect           Boolean  @map("is_correct")
+  answeredAt          DateTime @default(now()) @map("answered_at")
+  userId              String   @map("user_id")
+  quizQuestionId      String   @map("quiz_question_id")
+  completionRecordId  String?  @map("completion_record_id")
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizQuestion     QuizQuestion      @relation(fields: [quizQuestionId], references: [id], onDelete: Cascade)
+  completionRecord CompletionRecord? @relation(fields: [completionRecordId], references: [id])
+
+  @@map("quiz_responses")
+}
+
+model Assignment {
+  id                String   @id @default(cuid())
+  status            String   @default("pending")
+  dueDate           DateTime? @map("due_date")
+  assignedDate      DateTime @default(now()) @map("assigned_date")
+  userId            String   @map("user_id")
+  fleetId           String   @map("fleet_id")
+  moduleId          String?  @map("module_id")
+  trainingProgramId String?  @map("training_program_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fleet            Fleet            @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  module           Module?          @relation(fields: [moduleId], references: [id])
+  trainingProgram  TrainingProgram? @relation(fields: [trainingProgramId], references: [id])
+  notifications    Notification[]
+  completionRecords CompletionRecord[]
+
+  @@map("assignments")
+}
+
+model Notification {
+  id                   String   @id @default(cuid())
+  message              String
+  notificationType     String   @map("notification_type")
+  isRead               Boolean  @default(false) @map("is_read")
+  userId               String   @map("user_id")
+  fleetId              String?  @map("fleet_id")
+  relatedAssignmentId  String?  @map("related_assignment_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fleet             Fleet?      @relation(fields: [fleetId], references: [id])
+  relatedAssignment Assignment? @relation(fields: [relatedAssignmentId], references: [id])
+
+  @@map("notifications")
+}
+
+model CompletionRecord {
+  id                   String   @id @default(cuid())
+  completedDate        DateTime @default(now()) @map("completed_date")
+  quizScore            Int?     @map("quiz_score")
+  esignature           String?
+  esignatureTimestamp  DateTime? @map("esignature_timestamp")
+  userId               String   @map("user_id")
+  fleetId              String   @map("fleet_id")
+  lessonId             String?  @map("lesson_id")
+  moduleId             String?  @map("module_id")
+  assignmentId         String?  @map("assignment_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fleet         Fleet        @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  lesson        Lesson?      @relation(fields: [lessonId], references: [id])
+  module        Module?      @relation(fields: [moduleId], references: [id])
+  assignment    Assignment?  @relation(fields: [assignmentId], references: [id])
+  quizResponses QuizResponse[]
+
+  @@map("completion_records")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  details    String?
+  timestamp  DateTime @default(now())
+  userId     String   @map("user_id")
+  fleetId    String?  @map("fleet_id")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fleet Fleet? @relation(fields: [fleetId], references: [id])
+
+  @@map("audit_logs")
+}

@@ -1,0 +1,126 @@
+{
+  "total_pages": 7,
+  "total_elements": 796,
+  "total_workflows": 67,
+  "total_data_types": 11,
+  "pages": [
+    {
+      "id": "AAW",
+      "name": "reset_pw",
+      "element_count": 2,
+      "workflow_count": 1
+    },
+    {
+      "id": "AAX",
+      "name": "404",
+      "element_count": 2,
+      "workflow_count": 0
+    },
+    {
+      "id": "bTGbC",
+      "name": "index",
+      "element_count": 12,
+      "workflow_count": 32
+    },
+    {
+      "id": "bTHDU",
+      "name": "supervisor",
+      "element_count": 7,
+      "workflow_count": 16
+    },
+    {
+      "id": "bTHDZ",
+      "name": "driver_dashboard",
+      "element_count": 10,
+      "workflow_count": 21
+    },
+    {
+      "id": "bTHDb",
+      "name": "training_builder",
+      "element_count": 11,
+      "workflow_count": 30
+    },
+    {
+      "id": "bTHDg",
+      "name": "user_management",
+      "element_count": 9,
+      "workflow_count": 23
+    }
+  ],
+  "element_types": {
+    "Group": 313,
+    "Button": 72,
+    "Text": 273,
+    "Input": 29,
+    "Unknown": 1,
+    "PoweredByBubble": 1,
+    "Image": 2,
+    "Link": 10,
+    "Popup": 22,
+    "Dropdown": 25,
+    "RepeatingGroup": 11,
+    "MultiLineInput": 8,
+    "DateInput": 2,
+    "Icon": 20,
+    "Checkbox": 4,
+    "RadioButtons": 1,
+    "FileInput": 2
+  },
+  "data_types": [
+    {
+      "id": "user",
+      "name": "user",
+      "field_count": 0
+    },
+    {
+      "id": "fleet",
+      "name": "fleet",
+      "field_count": 10
+    },
+    {
+      "id": "lesson",
+      "name": "lesson",
+      "field_count": 8
+    },
+    {
+      "id": "module",
+      "name": "module",
+      "field_count": 5
+    },
+    {
+      "id": "auditlog",
+      "name": "auditlog",
+      "field_count": 7
+    },
+    {
+      "id": "assignment",
+      "name": "assignment",
+      "field_count": 7
+    },
+    {
+      "id": "notification",
+      "name": "notification",
+      "field_count": 6
+    },
+    {
+      "id": "quizquestion",
+      "name": "quizquestion",
+      "field_count": 5
+    },
+    {
+      "id": "quizresponse",
+      "name": "quizresponse",
+      "field_count": 6
+    },
+    {
+      "id": "trainingprogram",
+      "name": "trainingprogram",
+      "field_count": 4
+    },
+    {
+      "id": "completionrecord",
+      "name": "completionrecord",
+      "field_count": 9
+    }
+  ]
+}

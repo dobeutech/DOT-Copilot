@@ -1,0 +1,170 @@
+import { Router, Response } from 'express';
+import prisma from '../db';
+import { authenticate, requireRole, AuthenticatedRequest } from '../middleware/auth';
+import { validateBody, createQuizQuestionSchema, updateQuizQuestionSchema, createQuizResponseSchema } from '../schemas';
+
+const router = Router();
+
+router.use(authenticate);
+
+// Get quiz questions for a lesson
+router.get('/lessons/:lessonId/questions', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const questions = await prisma.quizQuestion.findMany({
+      where: { lessonId: req.params.lessonId },
+      orderBy: { sequenceOrder: 'asc' },
+    });
+
+    res.json({ data: questions });
+  } catch (error: any) {
+    console.error('Get quiz questions error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create quiz question
+router.post('/questions', requireRole('ADMIN', 'SUPERVISOR'), validateBody(createQuizQuestionSchema), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const question = await prisma.quizQuestion.create({
+      data: req.body,
+    });
+
+    res.status(201).json({ data: question });
+  } catch (error: any) {
+    console.error('Create quiz question error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update quiz question
+router.put('/questions/:id', requireRole('ADMIN', 'SUPERVISOR'), validateBody(updateQuizQuestionSchema), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await prisma.quizQuestion.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Quiz question not found' });
+    }
+
+    const question = await prisma.quizQuestion.update({
+      where: { id },
+      data: req.body,
+    });
+
+    res.json({ data: question });
+  } catch (error: any) {
+    console.error('Update quiz question error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete quiz question
+router.delete('/questions/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await prisma.quizQuestion.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Quiz question not found' });
+    }
+
+    await prisma.quizQuestion.delete({ where: { id } });
+
+    res.json({ message: 'Quiz question deleted successfully' });
+  } catch (error: any) {
+    console.error('Delete quiz question error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Submit quiz response
+router.post('/responses', validateBody(createQuizResponseSchema), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { selectedAnswer, quizQuestionId, completionRecordId } = req.body;
+
+    // Get the question to check correctness
+    const question = await prisma.quizQuestion.findUnique({
+      where: { id: quizQuestionId },
+    });
+
+    if (!question) {
+      return res.status(404).json({ error: 'Quiz question not found' });
+    }
+
+    const isCorrect = selectedAnswer === question.correctAnswer;
+
+    const response = await prisma.quizResponse.create({
+      data: {
+        selectedAnswer,
+        isCorrect,
+        userId: req.user!.userId,
+        quizQuestionId,
+        completionRecordId,
+      },
+      include: {
+        quizQuestion: true,
+      },
+    });
+
+    res.status(201).json({ 
+      data: {
+        ...response,
+        isCorrect,
+        correctAnswer: isCorrect ? undefined : question.correctAnswer, // Only show correct answer if wrong
+      },
+    });
+  } catch (error: any) {
+    console.error('Create quiz response error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get user's quiz responses for a lesson
+router.get('/lessons/:lessonId/responses', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const responses = await prisma.quizResponse.findMany({
+      where: {
+        userId: req.user!.userId,
+        quizQuestion: {
+          lessonId: req.params.lessonId,
+        },
+      },
+      include: {
+        quizQuestion: true,
+      },
+      orderBy: { answeredAt: 'desc' },
+    });
+
+    res.json({ data: responses });
+  } catch (error: any) {
+    console.error('Get quiz responses error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get quiz score for a completion record
+router.get('/completion-records/:recordId/score', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const responses = await prisma.quizResponse.findMany({
+      where: { completionRecordId: req.params.recordId },
+    });
+
+    const total = responses.length;
+    const correct = responses.filter((r: { isCorrect: boolean }) => r.isCorrect).length;
+    const score = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+    res.json({
+      data: {
+        total,
+        correct,
+        score,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get quiz score error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+export default router;
+

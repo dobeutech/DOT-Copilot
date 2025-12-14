@@ -1,0 +1,346 @@
+{
+  "user": {
+    "id": "user",
+    "name": "user",
+    "fields": {},
+    "custom_fields": {}
+  },
+  "fleet": {
+    "id": "fleet",
+    "name": "fleet",
+    "fields": {
+      "locations_text": {
+        "display": "locations",
+        "value": "text"
+      },
+      "cargo_type_text": {
+        "display": "cargo_type",
+        "value": "text"
+      },
+      "cdl_status_text": {
+        "display": "cdl_status",
+        "value": "text"
+      },
+      "company_name_text": {
+        "display": "company_name",
+        "value": "text"
+      },
+      "vehicle_types_text": {
+        "display": "vehicle_types",
+        "value": "text"
+      },
+      "key_risk_areas_text": {
+        "display": "key_risk_areas",
+        "value": "text"
+      },
+      "operation_type_text": {
+        "display": "operation_type",
+        "value": "text"
+      },
+      "states_of_operation_text": {
+        "display": "states_of_operation",
+        "value": "text"
+      },
+      "onboarding_completed_boolean": {
+        "display": "onboarding_completed",
+        "value": "boolean"
+      },
+      "compliance_profile_configured_boolean": {
+        "display": "compliance_profile_configured",
+        "value": "boolean"
+      }
+    },
+    "custom_fields": {}
+  },
+  "lesson": {
+    "id": "lesson",
+    "name": "lesson",
+    "fields": {
+      "content_text": {
+        "display": "content",
+        "value": "text"
+      },
+      "file_url_text": {
+        "display": "file_url",
+        "value": "text"
+      },
+      "lesson_name_text": {
+        "display": "lesson_name",
+        "value": "text"
+      },
+      "content_type_text": {
+        "display": "content_type",
+        "value": "text"
+      },
+      "fleet_custom_fleet": {
+        "display": "fleet",
+        "value": "custom.fleet"
+      },
+      "module_custom_module": {
+        "display": "module",
+        "value": "custom.module"
+      },
+      "sequence_order_number": {
+        "display": "sequence_order",
+        "value": "number"
+      },
+      "requires_esignature_boolean": {
+        "display": "requires_esignature",
+        "value": "boolean"
+      }
+    },
+    "custom_fields": {}
+  },
+  "module": {
+    "id": "module",
+    "name": "module",
+    "fields": {
+      "description_text": {
+        "display": "description",
+        "value": "text"
+      },
+      "module_name_text": {
+        "display": "module_name",
+        "value": "text"
+      },
+      "fleet_custom_fleet": {
+        "display": "fleet",
+        "value": "custom.fleet"
+      },
+      "sequence_order_number": {
+        "display": "sequence_order",
+        "value": "number"
+      },
+      "training_program_custom_trainingprogram": {
+        "display": "training_program",
+        "value": "custom.trainingprogram"
+      }
+    },
+    "custom_fields": {}
+  },
+  "auditlog": {
+    "id": "auditlog",
+    "name": "auditlog",
+    "fields": {
+      "user_user": {
+        "display": "user",
+        "value": "user"
+      },
+      "action_text": {
+        "display": "action",
+        "value": "text"
+      },
+      "details_text": {
+        "display": "details",
+        "value": "text"
+      },
+      "timestamp_date": {
+        "display": "timestamp",
+        "value": "date"
+      },
+      "entity_id_number": {
+        "display": "entity_id",
+        "value": "number"
+      },
+      "entity_type_text": {
+        "display": "entity_type",
+        "value": "text"
+      },
+      "fleet_custom_fleet": {
+        "display": "fleet",
+        "value": "custom.fleet"
+      }
+    },
+    "custom_fields": {}
+  },
+  "assignment": {
+    "id": "assignment",
+    "name": "assignment",
+    "fields": {
+      "user_user": {
+        "display": "user",
+        "value": "user"
+      },
+      "status_text": {
+        "display": "status",
+        "value": "text"
+      },
+      "due_date_date": {
+        "display": "due_date",
+        "value": "date"
+      },
+      "assigned_date_date": {
+        "display": "assigned_date",
+        "value": "date"
+      },
+      "fleet_custom_fleet": {
+        "display": "fleet",
+        "value": "custom.fleet"
+      },
+      "module_custom_module": {
+        "display": "module",
+        "value": "custom.module"
+      },
+      "training_program_custom_trainingprogram": {
+        "display": "training_program",
+        "value": "custom.trainingprogram"
+      }
+    },
+    "custom_fields": {}
+  },
+  "notification": {
+    "id": "notification",
+    "name": "notification",
+    "fields": {
+      "user_user": {
+        "display": "user",
+        "value": "user"
+      },
+      "message_text": {
+        "display": "message",
+        "value": "text"
+      },
+      "is_read_boolean": {
+        "display": "is_read",
+        "value": "boolean"
+      },
+      "fleet_custom_fleet": {
+        "display": "fleet",
+        "value": "custom.fleet"
+      },
+      "notification_type_text": {
+        "display": "notification_type",
+        "value": "text"
+      },
+      "related_assignment_custom_assignment": {
+        "display": "related_assignment",
+        "value": "custom.assignment"
+      }
+    },
+    "custom_fields": {}
+  },
+  "quizquestion": {
+    "id": "quizquestion",
+    "name": "quizquestion",
+    "fields": {
+      "question_text_text": {
+        "display": "question_text",
+        "value": "text"
+      },
+      "answer_options_text": {
+        "display": "answer_options",
+        "value": "text"
+      },
+      "correct_answer_text": {
+        "display": "correct_answer",
+        "value": "text"
+      },
+      "lesson_custom_lesson": {
+        "display": "lesson",
+        "value": "custom.lesson"
+      },
+      "sequence_order_number": {
+        "display": "sequence_order",
+        "value": "number"
+      }
+    },
+    "custom_fields": {}
+  },
+  "quizresponse": {
+    "id": "quizresponse",
+    "name": "quizresponse",
+    "fields": {
+      "user_user": {
+        "display": "user",
+        "value": "user"
+      },
+      "answered_at_date": {
+        "display": "answered_at",
+        "value": "date"
+      },
+      "is_correct_boolean": {
+        "display": "is_correct",
+        "value": "boolean"
+      },
+      "selected_answer_text": {
+        "display": "selected_answer",
+        "value": "text"
+      },
+      "quiz_question_custom_quizquestion": {
+        "display": "quiz_question",
+        "value": "custom.quizquestion"
+      },
+      "completion_record_custom_completionrecord": {
+        "display": "completion_record",
+        "value": "custom.completionrecord"
+      }
+    },
+    "custom_fields": {}
+  },
+  "trainingprogram": {
+    "id": "trainingprogram",
+    "name": "trainingprogram",
+    "fields": {
+      "description_text": {
+        "display": "description",
+        "value": "text"
+      },
+      "program_name_text": {
+        "display": "program_name",
+        "value": "text"
+      },
+      "fleet_custom_fleet": {
+        "display": "fleet",
+        "value": "custom.fleet"
+      },
+      "is_recommended_boolean": {
+        "display": "is_recommended",
+        "value": "boolean"
+      }
+    },
+    "custom_fields": {}
+  },
+  "completionrecord": {
+    "id": "completionrecord",
+    "name": "completionrecord",
+    "fields": {
+      "user_user": {
+        "display": "user",
+        "value": "user"
+      },
+      "esignature_text": {
+        "display": "esignature",
+        "value": "text"
+      },
+      "quiz_score_number": {
+        "display": "quiz_score",
+        "value": "number"
+      },
+      "fleet_custom_fleet": {
+        "display": "fleet",
+        "value": "custom.fleet"
+      },
+      "completed_date_date": {
+        "display": "completed_date",
+        "value": "date"
+      },
+      "lesson_custom_lesson": {
+        "display": "lesson",
+        "value": "custom.lesson"
+      },
+      "module_custom_module": {
+        "display": "module",
+        "value": "custom.module"
+      },
+      "esignature_timestamp_date": {
+        "display": "esignature_timestamp",
+        "value": "date"
+      },
+      "assignment_custom_assignment": {
+        "display": "assignment",
+        "value": "custom.assignment"
+      }
+    },
+    "custom_fields": {}
+  }
+}

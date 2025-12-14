@@ -1,0 +1,45 @@
+.training-builder-page {
+  min-height: 100vh;
+  background-color: var(--color_background, #f5f5f5);
+}
+
+.training-builder-header {
+  background-color: var(--color_surface_default, #fff);
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.training-builder-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.training-builder-section {
+  background-color: var(--color_surface_default, #fff);
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.programs-list,
+.modules-list,
+.lessons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.program-card,
+.module-card,
+.lesson-card {
+  padding: 16px;
+  border: 1px solid var(--color_border_default, #ddd);
+  border-radius: 4px;
+  background-color: var(--color_background, #f5f5f5);
+}
+

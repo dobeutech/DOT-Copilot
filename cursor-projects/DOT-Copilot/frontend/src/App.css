@@ -1,0 +1,34 @@
+/* App-level styles */
+.app {
+  min-height: 100vh;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .dashboard-content,
+  .supervisor-content,
+  .training-builder-content,
+  .user-management-content {
+    padding: 16px !important;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .supervisor-content,
+  .training-builder-content {
+    grid-template-columns: 1fr !important;
+  }
+
+  .table-header,
+  .table-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

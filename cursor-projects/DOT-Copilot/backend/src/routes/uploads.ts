@@ -1,0 +1,120 @@
+import { Router, Response } from 'express';
+import multer from 'multer';
+import { authenticate, requireRole, AuthenticatedRequest } from '../middleware/auth';
+import storageService from '../services/storage';
+
+const router = Router();
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB max
+  },
+  fileFilter: (req, file, cb) => {
+    // Allowed file types
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'application/pdf',
+      'video/mp4',
+      'video/webm',
+      'audio/mpeg',
+      'audio/wav',
+    ];
+
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} not allowed`));
+    }
+  },
+});
+
+router.use(authenticate);
+
+// Upload single file
+router.post('/', requireRole('ADMIN', 'SUPERVISOR'), upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file provided' });
+    }
+
+    if (!storageService.isReady()) {
+      return res.status(503).json({ error: 'Storage service not configured' });
+    }
+
+    const folder = req.body.folder || 'uploads';
+    const result = await storageService.uploadFile(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      folder
+    );
+
+    if (!result) {
+      return res.status(500).json({ error: 'Failed to upload file' });
+    }
+
+    res.status(201).json({
+      data: {
+        url: result.url,
+        key: result.key,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        contentType: req.file.mimetype,
+      },
+    });
+  } catch (error: any) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message || 'Upload failed' });
+  }
+});
+
+// Get signed download URL
+router.get('/download/:key(*)', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { key } = req.params;
+    
+    if (!storageService.isReady()) {
+      return res.status(503).json({ error: 'Storage service not configured' });
+    }
+
+    const url = await storageService.getSignedDownloadUrl(key);
+    
+    if (!url) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.json({ data: { url } });
+  } catch (error: any) {
+    console.error('Download URL error:', error);
+    res.status(500).json({ error: 'Failed to generate download URL' });
+  }
+});
+
+// Delete file
+router.delete('/:key(*)', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { key } = req.params;
+    
+    if (!storageService.isReady()) {
+      return res.status(503).json({ error: 'Storage service not configured' });
+    }
+
+    const success = await storageService.deleteFile(key);
+    
+    if (!success) {
+      return res.status(500).json({ error: 'Failed to delete file' });
+    }
+
+    res.json({ message: 'File deleted successfully' });
+  } catch (error: any) {
+    console.error('Delete error:', error);
+    res.status(500).json({ error: 'Failed to delete file' });
+  }
+});
+
+export default router;
+

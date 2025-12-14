@@ -1,0 +1,70 @@
+.driver-dashboard {
+  min-height: 100vh;
+  background-color: var(--color_background, #f5f5f5);
+}
+
+.dashboard-header {
+  background-color: var(--color_surface_default, #fff);
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dashboard-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background-color: var(--color_surface_default, #fff);
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.dashboard-section {
+  background-color: var(--color_surface_default, #fff);
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.assignments-list,
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.assignment-card,
+.notification-card {
+  padding: 16px;
+  border: 1px solid var(--color_border_default, #ddd);
+  border-radius: 4px;
+  background-color: var(--color_background, #f5f5f5);
+}
+
+.notification-card.unread {
+  border-left: 4px solid var(--color_primary, #007bff);
+  background-color: var(--color_surface_default, #fff);
+}
+
