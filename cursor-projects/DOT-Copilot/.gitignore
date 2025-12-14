@@ -21,6 +21,9 @@ build/
 .vscode/
 *.swp
 *.swo
+*.code-profile
+profiles/
+workspaces/profiles/
 
 # OS
 .DS_Store
