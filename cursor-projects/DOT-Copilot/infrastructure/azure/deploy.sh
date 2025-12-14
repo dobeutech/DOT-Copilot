@@ -108,6 +108,14 @@ validate_prerequisites() {
     fi
     success "OpenSSL installed"
     
+    # Check jq (required for parsing deployment outputs)
+    step "Checking jq..."
+    if ! command -v jq &> /dev/null; then
+        error "jq is not installed (required for parsing JSON). Install from: https://stedolan.github.io/jq/download/"
+    fi
+    JQ_VERSION=$(jq --version)
+    success "jq ${JQ_VERSION} installed"
+    
     success "All prerequisites satisfied!"
 }
 

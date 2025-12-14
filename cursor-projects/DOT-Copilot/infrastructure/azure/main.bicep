@@ -282,20 +282,15 @@ resource backendApp 'Microsoft.Web/sites@2023-01-01' = {
   }
 }
 
-// Key Vault Access Policy for Backend
-resource backendKeyVaultAccess 'Microsoft.KeyVault/vaults/accessPolicies@2023-02-01' = {
-  parent: keyVault
-  name: 'add'
+// Key Vault RBAC Role Assignment for Backend (Key Vault Secrets User)
+// Required because enableRbacAuthorization is true - access policies are ignored
+resource backendKeyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(keyVault.id, backendApp.id, '4633458b-17de-408a-b874-0445c86b69e6')
+  scope: keyVault
   properties: {
-    accessPolicies: [
-      {
-        tenantId: subscription().tenantId
-        objectId: backendApp.identity.principalId
-        permissions: {
-          secrets: ['get', 'list']
-        }
-      }
-    ]
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
+    principalId: backendApp.identity.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
@@ -334,6 +329,17 @@ resource backendStagingSlot 'Microsoft.Web/sites/slots@2023-01-01' = if (enableS
         { name: 'ENABLE_DOCS', value: 'true' }
       ]
     }
+  }
+}
+
+// Key Vault RBAC Role Assignment for Staging Slot
+resource stagingKeyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableStagingSlot) {
+  name: guid(keyVault.id, backendStagingSlot.id, '4633458b-17de-408a-b874-0445c86b69e6')
+  scope: keyVault
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
+    principalId: backendStagingSlot.identity.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
