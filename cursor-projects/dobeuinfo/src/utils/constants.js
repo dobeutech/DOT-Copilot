@@ -10,6 +10,7 @@ export const ROUTES = {
   HOME: '/',
   REVIEWS: '/reviews',
   SUBMIT: '/submit',
+  CONTACT: '/contact',
 }
 
 // Form stages

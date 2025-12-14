@@ -1,27 +1,42 @@
 import { Helmet } from 'react-helmet-async'
+import { DEFAULT_SEO, APP_NAME } from '../utils/constants'
 
 function SEO({ 
-  title = "Dobeu Tech Solutions | Honest Software Reviews & Real-World Trials",
-  description = "Software shouldn't feel like a gamble. Dobeu.info is a free, independent software review hub run by Jeremy Williams—a lifelong technologist with zero vendor bias. We break down real business pain points, evaluate top providers, surface underrated tools, and document hands-on trials so companies can make smarter decisions without marketing noise. Vendors and startups can also submit their products for transparent, real-world testing.",
-  url = "https://dobeu.info",
-  type = "website"
+  title = DEFAULT_SEO.title,
+  description = DEFAULT_SEO.description,
+  keywords = DEFAULT_SEO.keywords,
+  url = typeof window !== 'undefined' ? window.location.href : 'https://dobeu.info',
+  type = "website",
+  image = null,
+  author = "Jeremy Williams"
 }) {
+  const fullTitle = title.includes(APP_NAME) ? title : `${title} | ${APP_NAME}`
+  const ogImage = image || `${url}/og-image.jpg`
+
   return (
     <Helmet>
-      <title>{title}</title>
+      <title>{fullTitle}</title>
       <meta name="description" content={description} />
+      {keywords && <meta name="keywords" content={keywords} />}
+      <meta name="author" content={author} />
       <link rel="canonical" href={url} />
       
       {/* Open Graph */}
-      <meta property="og:title" content={title} />
+      <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:type" content={type} />
       <meta property="og:url" content={url} />
+      {image && <meta property="og:image" content={ogImage} />}
       
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title} />
+      <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
+      {image && <meta name="twitter:image" content={ogImage} />}
+      
+      {/* Additional SEO */}
+      <meta name="robots" content="index, follow" />
+      <meta name="language" content="English" />
     </Helmet>
   )
 }

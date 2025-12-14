@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://dobeu.info/sitemap.xml
+

@@ -12,6 +12,7 @@ function Layout({ children }) {
             <Link to="/">Home</Link>
             <Link to="/reviews">Reviews</Link>
             <Link to="/submit">Submit Product</Link>
+            <Link to="/contact">Contact</Link>
           </div>
         </nav>
       </header>

@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import SEO from '../components/SEO'
 import Loading from '../components/Loading'
 import { getReviews } from '../services/api'
+import { useDebounce } from '../hooks/useDebounce'
 
 function ReviewsPage() {
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
+  
+  const debouncedSearch = useDebounce(searchQuery, 300)
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -26,6 +31,30 @@ function ReviewsPage() {
 
     fetchReviews()
   }, [])
+
+  const filteredReviews = useMemo(() => {
+    let filtered = reviews
+
+    // Filter by search query
+    if (debouncedSearch.trim()) {
+      const query = debouncedSearch.toLowerCase()
+      filtered = filtered.filter(
+        (review) =>
+          (review.title || review.toolName || '').toLowerCase().includes(query) ||
+          (review.painPoint || '').toLowerCase().includes(query) ||
+          (review.verdict?.text || '').toLowerCase().includes(query)
+      )
+    }
+
+    // Filter by status
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(
+        (review) => review.verdict?.status === filterStatus
+      )
+    }
+
+    return filtered
+  }, [reviews, debouncedSearch, filterStatus])
 
   if (loading) {
     return (
@@ -70,6 +99,33 @@ function ReviewsPage() {
             Real-world testing, honest results. No vendor bias, no marketing fluff.
           </p>
 
+          {reviews.length > 0 && (
+            <div className="reviews-filters">
+              <div className="search-box">
+                <input
+                  type="text"
+                  placeholder="Search reviews..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              <div className="filter-box">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="all">All Reviews</option>
+                  <option value="approved">Approved</option>
+                  <option value="recommended">Recommended</option>
+                  <option value="neutral">Neutral</option>
+                  <option value="not-recommended">Not Recommended</option>
+                </select>
+              </div>
+            </div>
+          )}
+
           {reviews.length === 0 ? (
             <div className="empty-state">
               <h2>No Reviews Yet</h2>
@@ -78,9 +134,25 @@ function ReviewsPage() {
                 Submit Your Product
               </Link>
             </div>
+          ) : filteredReviews.length === 0 ? (
+            <div className="empty-state">
+              <h2>No Reviews Found</h2>
+              <p>Try adjusting your search or filter criteria.</p>
+              {(debouncedSearch || filterStatus !== 'all') && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('')
+                    setFilterStatus('all')
+                  }}
+                  className="btn-secondary"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
           ) : (
             <div className="reviews-grid">
-              {reviews.map((review) => (
+              {filteredReviews.map((review) => (
                 <article key={review.id} className="review-card">
                   <div className="review-card-header">
                     <h2 className="review-card-title">
