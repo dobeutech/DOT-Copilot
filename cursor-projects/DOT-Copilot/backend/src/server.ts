@@ -39,6 +39,8 @@ import webhooksRoutes from './routes/webhooks';
 import driverStatsRoutes from './routes/driverStats';
 import btwRoutes from './routes/btw';
 import remindersRoutes from './routes/reminders';
+import devicesRoutes from './routes/devices';
+import i18nRoutes from './routes/i18n';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
@@ -157,6 +159,8 @@ app.use('/api/webhooks', webhooksRoutes);
 app.use('/api/driver-stats', driverStatsRoutes);
 app.use('/api/btw', btwRoutes);
 app.use('/api/reminders', remindersRoutes);
+app.use('/api/devices', devicesRoutes);
+app.use('/api/i18n', i18nRoutes);
 
 // Error logging middleware
 app.use(errorLogger);
