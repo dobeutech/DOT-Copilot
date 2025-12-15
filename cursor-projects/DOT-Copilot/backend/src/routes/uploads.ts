@@ -23,6 +23,8 @@ const upload = multer({
       'video/webm',
       'audio/mpeg',
       'audio/wav',
+      'audio/x-wav',
+      'audio/wave',
     ];
 
     if (allowedTypes.includes(file.mimetype)) {
