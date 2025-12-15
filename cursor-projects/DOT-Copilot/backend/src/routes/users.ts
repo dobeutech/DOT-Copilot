@@ -113,9 +113,11 @@ router.post('/', requireRole('ADMIN', 'SUPERVISOR'), validateBody(createUserSche
 router.put('/:id', validateBody(updateUserSchema), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const isPrivileged = ['ADMIN', 'SUPERVISOR'].includes(req.user?.role || '');
+    const isSelfUpdate = req.user?.userId === id;
 
     // Users can only update themselves unless they're admin/supervisor
-    if (req.user?.userId !== id && !['ADMIN', 'SUPERVISOR'].includes(req.user?.role || '')) {
+    if (!isSelfUpdate && !isPrivileged) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
@@ -124,9 +126,33 @@ router.put('/:id', validateBody(updateUserSchema), async (req: AuthenticatedRequ
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // SECURITY: Filter update data based on user's role
+    // Non-privileged users (DRIVER) can only update safe fields, not role or fleetId
+    let updateData: Record<string, any> = {};
+    
+    if (isPrivileged) {
+      // Admins/Supervisors can update all allowed fields
+      updateData = req.body;
+      
+      // Additional check: only ADMIN can change roles to ADMIN
+      if (req.body.role === 'ADMIN' && req.user?.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Only admins can assign admin role' });
+      }
+    } else {
+      // Drivers can only update their own name and email
+      const { name, email } = req.body;
+      if (name !== undefined) updateData.name = name;
+      if (email !== undefined) updateData.email = email;
+      
+      // Log attempt to modify restricted fields
+      if (req.body.role || req.body.fleetId !== undefined) {
+        console.warn(`Security: User ${req.user?.userId} attempted to modify restricted fields`);
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id },
-      data: req.body,
+      data: updateData,
       select: {
         id: true,
         email: true,

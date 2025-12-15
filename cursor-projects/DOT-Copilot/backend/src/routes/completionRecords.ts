@@ -81,7 +81,22 @@ router.post('/', validateBody(createCompletionRecordSchema), async (req: Authent
     });
 
     // Update assignment status if applicable
+    // SECURITY: Verify assignment belongs to the authenticated user before updating
     if (req.body.assignmentId) {
+      const assignment = await prisma.assignment.findUnique({
+        where: { id: req.body.assignmentId },
+        select: { userId: true },
+      });
+
+      if (!assignment) {
+        return res.status(404).json({ error: 'Assignment not found' });
+      }
+
+      // Drivers can only complete their own assignments
+      if (req.user?.role === 'DRIVER' && assignment.userId !== req.user.userId) {
+        return res.status(403).json({ error: 'Cannot complete assignment belonging to another user' });
+      }
+
       await prisma.assignment.update({
         where: { id: req.body.assignmentId },
         data: { status: 'completed' },
