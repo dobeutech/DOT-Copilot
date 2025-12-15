@@ -38,14 +38,14 @@ services:
     container_name: api_server
     restart: unless-stopped
     environment:
-      - ENVIRONMENT=${ENVIRONMENT:-production}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
-      - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
-      - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
-      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
-      - SECRET_KEY=${SECRET_KEY}
+      - ENVIRONMENT=${ENVIRONMENT:?ENVIRONMENT required}
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL required}
+      - REDIS_URL=${REDIS_URL:?REDIS_URL required}
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN:?AUTH0_DOMAIN required}
+      - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID:?AUTH0_CLIENT_ID required}
+      - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET:?AUTH0_CLIENT_SECRET required}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE:?AUTH0_AUDIENCE required}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY required}
       - MCP_GATEWAY_URL=http://mcp_gateway:8000
     volumes:
       - ./api:/app
@@ -71,12 +71,12 @@ services:
     container_name: mcp_gateway
     restart: unless-stopped
     environment:
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:?GITHUB_TOKEN required}
       - BRAVE_API_KEY=${BRAVE_API_KEY}
       - ZAPIER_API_KEY=${ZAPIER_API_KEY}
       - APIDOG_TOKEN=${APIDOG_TOKEN}
       - APIDOG_PROJECT_ID=${APIDOG_PROJECT_ID}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/1}
+      - REDIS_URL=${REDIS_URL:?REDIS_URL required}
     volumes:
       - ./mcp-gateway:/app
       - mcp_data:/app/data
@@ -100,7 +100,7 @@ services:
     container_name: github_mcp_server
     restart: unless-stopped
     environment:
-      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN:?GITHUB_TOKEN required}
       - GITHUB_READ_ONLY=${GITHUB_READ_ONLY:-0}
       - GITHUB_TOOLSETS=${GITHUB_TOOLSETS:-all}
     networks:
@@ -121,9 +121,9 @@ services:
     container_name: postgres_db
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-appdb}
-      - POSTGRES_USER=${POSTGRES_USER:-appuser}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:?POSTGRES_DB required}
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER required}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -143,7 +143,7 @@ services:
     image: redis:7-alpine
     container_name: redis_cache
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme} --appendonly yes
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required} --appendonly yes
     volumes:
       - redis_data:/data
     networks:
@@ -162,16 +162,16 @@ services:
     container_name: mongodb
     restart: unless-stopped
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
-      - MONGO_INITDB_DATABASE=${MONGO_DATABASE:-appdb}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:?MONGO_ROOT_USER required}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD required}
+      - MONGO_INITDB_DATABASE=${MONGO_DATABASE:?MONGO_DATABASE required}
     volumes:
       - mongodb_data:/data/db
       - ./database/mongodb-init:/docker-entrypoint-initdb.d:ro
     networks:
       - backend_network
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"  # Bind to localhost only
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -201,7 +201,7 @@ services:
     container_name: grafana
     restart: unless-stopped
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:?GRAFANA_PASSWORD required}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
@@ -223,7 +223,7 @@ services:
     cap_add:
       - IPC_LOCK
     environment:
-      - VAULT_DEV_ROOT_TOKEN_ID=${VAULT_ROOT_TOKEN:-changeme}
+      - VAULT_DEV_ROOT_TOKEN_ID=${VAULT_ROOT_TOKEN:?VAULT_ROOT_TOKEN required}
       - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
     volumes:
       - vault_data:/vault/file
