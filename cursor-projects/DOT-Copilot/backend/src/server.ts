@@ -81,36 +81,110 @@ app.use(requestLogger);
 // Health check endpoints
 app.get('/health', (req: Request, res: Response) => {
   res.json({ 
-    status: 'ok', 
+    status: 'healthy',
+    service: 'dot-copilot-backend',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
     version: process.env.npm_package_version || '1.0.0',
   });
 });
 
 app.get('/health/ready', async (req: Request, res: Response) => {
+  const checks: Record<string, any> = {
+    timestamp: new Date().toISOString()
+  };
+
   try {
     // Check database connection
+    const dbStart = Date.now();
     const prismaModule = await import('@prisma/client');
     const PrismaClientClass = prismaModule.PrismaClient;
     const prisma = new PrismaClientClass();
     await prisma.$queryRaw`SELECT 1`;
     await prisma.$disconnect();
+    
+    checks.database = {
+      status: 'healthy',
+      responseTime: Date.now() - dbStart
+    };
 
     res.json({ 
       status: 'ready',
-      database: 'connected',
+      service: 'dot-copilot-backend',
+      checks
     });
   } catch (error) {
+    checks.database = {
+      status: 'unhealthy',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+
     res.status(503).json({ 
-      status: 'not_ready',
-      database: 'disconnected',
+      status: 'not ready',
+      service: 'dot-copilot-backend',
+      checks
     });
   }
 });
 
 app.get('/health/live', (req: Request, res: Response) => {
-  res.json({ status: 'alive' });
+  res.json({ 
+    status: 'alive',
+    service: 'dot-copilot-backend',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/health/detailed', async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  const checks: Record<string, any> = {};
+
+  // Database check
+  try {
+    const dbStart = Date.now();
+    const prismaModule = await import('@prisma/client');
+    const PrismaClientClass = prismaModule.PrismaClient;
+    const prisma = new PrismaClientClass();
+    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$disconnect();
+    
+    checks.database = {
+      status: 'healthy',
+      responseTime: Date.now() - dbStart
+    };
+  } catch (error) {
+    checks.database = {
+      status: 'unhealthy',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+
+  // Memory check
+  const memUsage = process.memoryUsage();
+  checks.memory = {
+    status: memUsage.heapUsed < memUsage.heapTotal * 0.9 ? 'healthy' : 'warning',
+    heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+    heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+    external: `${Math.round(memUsage.external / 1024 / 1024)}MB`,
+    rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`
+  };
+
+  // Overall status
+  const allHealthy = Object.values(checks).every(
+    check => check.status === 'healthy' || check.status === 'warning'
+  );
+
+  const statusCode = allHealthy ? 200 : 503;
+
+  res.status(statusCode).json({
+    status: allHealthy ? 'healthy' : 'degraded',
+    service: 'dot-copilot-backend',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    responseTime: Date.now() - startTime,
+    checks
+  });
 });
 
 // Metrics endpoint (protected in production)
