@@ -1,4 +1,5 @@
 // This is your Prisma schema file,
+// Fleet Driver Training Platform - Enhanced Schema
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -9,11 +10,83 @@ datasource db {
   provider = "postgresql"
 }
 
+// ============================================
+// ENUMS
+// ============================================
+
 enum UserRole {
   DRIVER
+  DRIVER_COACH
   SUPERVISOR
+  BRANCH_MANAGER
   ADMIN
 }
+
+enum DocumentType {
+  CDL
+  MEDICAL_CARD
+  HAZMAT_ENDORSEMENT
+  TWIC_CARD
+  PASSPORT
+  MVR
+  DRUG_TEST
+  BACKGROUND_CHECK
+  STATE_PERMIT
+  OTHER
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  EXPIRING_SOON
+  EXPIRED
+  NOT_STARTED
+  IN_PROGRESS
+  WAIVED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+}
+
+enum ContentType {
+  VIDEO
+  PDF
+  POWERPOINT
+  SCORM
+  TEXT
+  IMAGE
+  QUICK_ACKNOWLEDGE
+}
+
+enum WebhookEventType {
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED
+  ASSIGNMENT_CREATED
+  ASSIGNMENT_UPDATED
+  ASSIGNMENT_DUE_SOON
+  ASSIGNMENT_OVERDUE
+  TRAINING_STARTED
+  TRAINING_PROGRESS
+  TRAINING_COMPLETED
+  QUIZ_SUBMITTED
+  QUIZ_PASSED
+  QUIZ_FAILED
+  LESSON_COMPLETED
+  ESIGNATURE_CAPTURED
+  DOCUMENT_EXPIRING
+  DOCUMENT_EXPIRED
+  COMPLIANCE_AT_RISK
+  COMPLIANCE_EXPIRED
+  BTW_SESSION_COMPLETED
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
 
 model User {
   id                String   @id @default(cuid())
@@ -22,18 +95,81 @@ model User {
   passwordHash      String   @map("password_hash")
   role              UserRole @default(DRIVER)
   fleetId           String?  @map("fleet_id")
+  
+  // Contact & Preferences
+  phone             String?
+  preferredLanguage String   @default("en") @map("preferred_language")
+  timezone          String   @default("America/New_York")
+  
+  // Notification Preferences
+  preferEmail       Boolean  @default(true) @map("prefer_email")
+  preferSms         Boolean  @default(false) @map("prefer_sms")
+  preferPush        Boolean  @default(true) @map("prefer_push")
+  
+  // Employment Info
+  employeeId        String?  @map("employee_id")
+  hireDate          DateTime? @map("hire_date")
+  locationId        String?  @map("location_id")
+  
+  // Status
+  isActive          Boolean  @default(true) @map("is_active")
+  lastLoginAt       DateTime? @map("last_login_at")
+  
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  fleet             Fleet?   @relation(fields: [fleetId], references: [id])
-  assignments       Assignment[]
-  notifications     Notification[]
-  completionRecords CompletionRecord[]
-  quizResponses     QuizResponse[]
-  auditLogs         AuditLog[]
+  // Relations
+  fleet              Fleet?              @relation(fields: [fleetId], references: [id])
+  location           Location?           @relation(fields: [locationId], references: [id])
+  assignments        Assignment[]
+  notifications      Notification[]
+  completionRecords  CompletionRecord[]
+  quizResponses      QuizResponse[]
+  auditLogs          AuditLog[]
+  
+  // New Relations
+  documents          DriverDocument[]
+  complianceRecords  DriverCompliance[]
+  pushDevices        PushDevice[]
+  driverStats        DriverStats?
+  remindersReceived  Reminder[]          @relation("UserReminders")
+  remindersCreated   Reminder[]          @relation("CreatedReminders")
+  webhooksCreated    Webhook[]
+  reportsCreated     ScheduledReport[]
+  
+  // BTW Relations
+  btwSessionsAsTrainee  BtwSession[]     @relation("TraineeSessions")
+  btwSessionsAsTrainer  BtwSession[]     @relation("TrainerSessions")
+  
+  // Training Trigger assignments
+  triggerAssignments    TriggerAssignment[]
 
   @@map("users")
 }
+
+model Location {
+  id          String   @id @default(cuid())
+  name        String
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?  @map("zip_code")
+  latitude    Float?
+  longitude   Float?
+  fleetId     String   @map("fleet_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  fleet       Fleet    @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  users       User[]
+  
+  @@map("locations")
+}
+
+// ============================================
+// FLEET & ORGANIZATION
+// ============================================
 
 model Fleet {
   id                           String   @id @default(cuid())
@@ -47,20 +183,44 @@ model Fleet {
   statesOfOperation            String?  @map("states_of_operation")
   onboardingCompleted          Boolean  @default(false) @map("onboarding_completed")
   complianceProfileConfigured  Boolean  @default(false) @map("compliance_profile_configured")
+  
+  // Branding (for white-label)
+  logoUrl                      String?  @map("logo_url")
+  primaryColor                 String?  @map("primary_color")
+  secondaryColor               String?  @map("secondary_color")
+  
+  // Settings
+  defaultLanguage              String   @default("en") @map("default_language")
+  enableSmsNotifications       Boolean  @default(false) @map("enable_sms_notifications")
+  enablePushNotifications      Boolean  @default(true) @map("enable_push_notifications")
+  
   createdAt                    DateTime @default(now()) @map("created_at")
   updatedAt                    DateTime @updatedAt @map("updated_at")
 
-  users            User[]
-  trainingPrograms TrainingProgram[]
-  modules          Module[]
-  lessons          Lesson[]
-  assignments      Assignment[]
-  notifications    Notification[]
-  completionRecords CompletionRecord[]
-  auditLogs        AuditLog[]
+  // Existing Relations
+  users              User[]
+  trainingPrograms   TrainingProgram[]
+  modules            Module[]
+  lessons            Lesson[]
+  assignments        Assignment[]
+  notifications      Notification[]
+  completionRecords  CompletionRecord[]
+  auditLogs          AuditLog[]
+  
+  // New Relations
+  locationsList          Location[]
+  complianceRequirements ComplianceRequirement[]
+  webhooks               Webhook[]
+  scheduledReports       ScheduledReport[]
+  trainingTriggers       TrainingTrigger[]
+  driverDocuments        DriverDocument[]
 
   @@map("fleets")
 }
+
+// ============================================
+// TRAINING CONTENT
+// ============================================
 
 model TrainingProgram {
   id            String   @id @default(cuid())
@@ -68,14 +228,41 @@ model TrainingProgram {
   description   String?
   isRecommended Boolean  @default(false) @map("is_recommended")
   fleetId       String   @map("fleet_id")
+  
+  // New fields
+  isTemplate        Boolean  @default(false) @map("is_template")
+  templateCategory  String?  @map("template_category") // OTR, Hazmat, LocalDelivery, etc.
+  estimatedDuration Int?     @map("estimated_duration") // minutes
+  defaultLanguage   String   @default("en") @map("default_language")
+  thumbnailUrl      String?  @map("thumbnail_url")
+  
+  // Compliance linkage
+  complianceRequirementId String? @map("compliance_requirement_id")
+  
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  fleet       Fleet        @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-  modules     Module[]
-  assignments Assignment[]
+  fleet                 Fleet                  @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  complianceRequirement ComplianceRequirement? @relation(fields: [complianceRequirementId], references: [id])
+  modules               Module[]
+  assignments           Assignment[]
+  trainingTriggers      TrainingTrigger[]
+  translations          TrainingProgramTranslation[]
 
   @@map("training_programs")
+}
+
+model TrainingProgramTranslation {
+  id                String @id @default(cuid())
+  trainingProgramId String @map("training_program_id")
+  language          String // "es", "ht", "pt"
+  programName       String @map("program_name")
+  description       String?
+  
+  trainingProgram TrainingProgram @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+  
+  @@unique([trainingProgramId, language])
+  @@map("training_program_translations")
 }
 
 model Module {
@@ -85,38 +272,132 @@ model Module {
   sequenceOrder     Int      @default(0) @map("sequence_order")
   fleetId           String   @map("fleet_id")
   trainingProgramId String   @map("training_program_id")
+  
+  // New fields
+  estimatedDuration Int?     @map("estimated_duration") // minutes
+  passingScore      Int      @default(80) @map("passing_score") // percentage
+  
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  fleet            Fleet           @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-  trainingProgram  TrainingProgram @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
-  lessons          Lesson[]
-  assignments      Assignment[]
+  fleet             Fleet           @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  trainingProgram   TrainingProgram @relation(fields: [trainingProgramId], references: [id], onDelete: Cascade)
+  lessons           Lesson[]
+  assignments       Assignment[]
   completionRecords CompletionRecord[]
+  translations      ModuleTranslation[]
 
   @@map("modules")
 }
 
+model ModuleTranslation {
+  id          String @id @default(cuid())
+  moduleId    String @map("module_id")
+  language    String
+  moduleName  String @map("module_name")
+  description String?
+  
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  
+  @@unique([moduleId, language])
+  @@map("module_translations")
+}
+
 model Lesson {
-  id                 String   @id @default(cuid())
-  lessonName         String   @map("lesson_name")
+  id                 String      @id @default(cuid())
+  lessonName         String      @map("lesson_name")
   content            String?
-  contentType        String?  @map("content_type")
-  fileUrl            String?  @map("file_url")
-  sequenceOrder      Int      @default(0) @map("sequence_order")
-  requiresEsignature Boolean  @default(false) @map("requires_esignature")
-  fleetId            String   @map("fleet_id")
-  moduleId           String   @map("module_id")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  contentType        ContentType @default(TEXT) @map("content_type")
+  fileUrl            String?     @map("file_url")
+  sequenceOrder      Int         @default(0) @map("sequence_order")
+  requiresEsignature Boolean     @default(false) @map("requires_esignature")
+  fleetId            String      @map("fleet_id")
+  moduleId           String      @map("module_id")
+  
+  // Video-specific fields
+  videoDuration      Int?        @map("video_duration") // seconds
+  videoUrl           String?     @map("video_url")
+  videoThumbnail     String?     @map("video_thumbnail")
+  
+  // SCORM-specific fields
+  scormPackageUrl    String?     @map("scorm_package_url")
+  scormVersion       String?     @map("scorm_version") // "1.2", "2004"
+  scormEntryPoint    String?     @map("scorm_entry_point")
+  
+  // PowerPoint-specific fields
+  pptOriginalUrl     String?     @map("ppt_original_url")
+  pptConvertedUrl    String?     @map("ppt_converted_url") // converted to PDF/images
+  pptSlideCount      Int?        @map("ppt_slide_count")
+  
+  // Quick Acknowledge specific
+  acknowledgmentText String?     @map("acknowledgment_text")
+  
+  // Geo-restriction
+  geoRestriction     Json?       @map("geo_restriction")
+  // Example: { "type": "include", "locations": [{"lat": 41.8, "lng": -87.6, "radius": 500}] }
+  
+  // Estimated time
+  estimatedDuration  Int?        @map("estimated_duration") // minutes
+  
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
 
   fleet             Fleet              @relation(fields: [fleetId], references: [id], onDelete: Cascade)
   module            Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   quizQuestions     QuizQuestion[]
   completionRecords CompletionRecord[]
+  translations      LessonTranslation[]
+  progressRecords   LessonProgress[]
 
   @@map("lessons")
 }
+
+model LessonTranslation {
+  id               String @id @default(cuid())
+  lessonId         String @map("lesson_id")
+  language         String
+  lessonName       String @map("lesson_name")
+  content          String?
+  fileUrl          String? @map("file_url")
+  videoUrl         String? @map("video_url")
+  acknowledgmentText String? @map("acknowledgment_text")
+  
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@unique([lessonId, language])
+  @@map("lesson_translations")
+}
+
+model LessonProgress {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  lessonId        String   @map("lesson_id")
+  assignmentId    String?  @map("assignment_id")
+  
+  // Progress tracking
+  progressPercent Int      @default(0) @map("progress_percent")
+  videoPosition   Int?     @map("video_position") // seconds
+  lastAccessedAt  DateTime @default(now()) @map("last_accessed_at")
+  timeSpent       Int      @default(0) @map("time_spent") // seconds
+  
+  // SCORM tracking
+  scormStatus     String?  @map("scorm_status") // incomplete, completed, passed, failed
+  scormScore      Float?   @map("scorm_score")
+  scormData       Json?    @map("scorm_data") // SCORM suspend_data
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  lesson     Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  assignment Assignment? @relation(fields: [assignmentId], references: [id])
+  
+  @@unique([userId, lessonId, assignmentId])
+  @@map("lesson_progress")
+}
+
+// ============================================
+// QUIZZES
+// ============================================
 
 model QuizQuestion {
   id            String   @id @default(cuid())
@@ -125,13 +406,34 @@ model QuizQuestion {
   correctAnswer String   @map("correct_answer")
   sequenceOrder Int      @default(0) @map("sequence_order")
   lessonId      String   @map("lesson_id")
+  
+  // New fields
+  questionType  String   @default("multiple_choice") @map("question_type") // multiple_choice, true_false, multi_select
+  points        Int      @default(1)
+  explanation   String?  // Shown after answering
+  
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  responses QuizResponse[]
+  lesson       Lesson               @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  responses    QuizResponse[]
+  translations QuizQuestionTranslation[]
 
   @@map("quiz_questions")
+}
+
+model QuizQuestionTranslation {
+  id            String @id @default(cuid())
+  questionId    String @map("question_id")
+  language      String
+  questionText  String @map("question_text")
+  answerOptions String @map("answer_options")
+  explanation   String?
+  
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  @@unique([questionId, language])
+  @@map("quiz_question_translations")
 }
 
 model QuizResponse {
@@ -142,6 +444,9 @@ model QuizResponse {
   userId              String   @map("user_id")
   quizQuestionId      String   @map("quiz_question_id")
   completionRecordId  String?  @map("completion_record_id")
+  
+  // New fields
+  timeSpent           Int?     @map("time_spent") // seconds to answer
 
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   quizQuestion     QuizQuestion      @relation(fields: [quizQuestionId], references: [id], onDelete: Cascade)
@@ -150,43 +455,42 @@ model QuizResponse {
   @@map("quiz_responses")
 }
 
+// ============================================
+// ASSIGNMENTS & COMPLETIONS
+// ============================================
+
 model Assignment {
   id                String   @id @default(cuid())
-  status            String   @default("pending")
+  status            String   @default("pending") // pending, in_progress, completed, overdue
   dueDate           DateTime? @map("due_date")
   assignedDate      DateTime @default(now()) @map("assigned_date")
   userId            String   @map("user_id")
   fleetId           String   @map("fleet_id")
   moduleId          String?  @map("module_id")
   trainingProgramId String?  @map("training_program_id")
+  
+  // New fields
+  assignedBy        String?  @map("assigned_by")
+  priority          String   @default("normal") // low, normal, high, urgent
+  remindersSent     Int      @default(0) @map("reminders_sent")
+  lastReminderAt    DateTime? @map("last_reminder_at")
+  
+  // For triggered assignments
+  triggeredBy       String?  @map("triggered_by") // training_trigger_id or manual
+  triggerEventData  Json?    @map("trigger_event_data")
+  
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fleet            Fleet            @relation(fields: [fleetId], references: [id], onDelete: Cascade)
-  module           Module?          @relation(fields: [moduleId], references: [id])
-  trainingProgram  TrainingProgram? @relation(fields: [trainingProgramId], references: [id])
-  notifications    Notification[]
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fleet             Fleet            @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  module            Module?          @relation(fields: [moduleId], references: [id])
+  trainingProgram   TrainingProgram? @relation(fields: [trainingProgramId], references: [id])
+  notifications     Notification[]
   completionRecords CompletionRecord[]
+  lessonProgress    LessonProgress[]
 
   @@map("assignments")
-}
-
-model Notification {
-  id                   String   @id @default(cuid())
-  message              String
-  notificationType     String   @map("notification_type")
-  isRead               Boolean  @default(false) @map("is_read")
-  userId               String   @map("user_id")
-  fleetId              String?  @map("fleet_id")
-  relatedAssignmentId  String?  @map("related_assignment_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fleet             Fleet?      @relation(fields: [fleetId], references: [id])
-  relatedAssignment Assignment? @relation(fields: [relatedAssignmentId], references: [id])
-
-  @@map("notifications")
 }
 
 model CompletionRecord {
@@ -200,6 +504,14 @@ model CompletionRecord {
   lessonId             String?  @map("lesson_id")
   moduleId             String?  @map("module_id")
   assignmentId         String?  @map("assignment_id")
+  
+  // New fields
+  timeSpent            Int?     @map("time_spent") // total seconds
+  attempts             Int      @default(1)
+  passed               Boolean  @default(true)
+  certificateUrl       String?  @map("certificate_url")
+  certificateId        String?  @map("certificate_id") // for verification
+  
   createdAt            DateTime @default(now()) @map("created_at")
 
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -212,18 +524,440 @@ model CompletionRecord {
   @@map("completion_records")
 }
 
+// ============================================
+// COMPLIANCE & DOCUMENTS
+// ============================================
+
+model ComplianceRequirement {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  regulatoryBody  String   @map("regulatory_body") // FMCSA, DOT, State
+  requiredHours   Int?     @map("required_hours")
+  renewalPeriod   Int?     @map("renewal_period") // months, null = one-time
+  appliesTo       String[] @map("applies_to") // ["CDL-A", "Hazmat", "Tanker"]
+  isActive        Boolean  @default(true) @map("is_active")
+  fleetId         String?  @map("fleet_id") // null = system-wide template
+  
+  // Alert thresholds (days before expiration)
+  alertDays       Int[]    @default([90, 60, 30, 14, 7]) @map("alert_days")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  fleet              Fleet?             @relation(fields: [fleetId], references: [id])
+  driverCompliance   DriverCompliance[]
+  trainingPrograms   TrainingProgram[]
+  
+  @@map("compliance_requirements")
+}
+
+model DriverCompliance {
+  id                   String           @id @default(cuid())
+  userId               String           @map("user_id")
+  requirementId        String           @map("requirement_id")
+  status               ComplianceStatus @default(NOT_STARTED)
+  completedDate        DateTime?        @map("completed_date")
+  expirationDate       DateTime?        @map("expiration_date")
+  hoursCompleted       Int?             @map("hours_completed")
+  certificateUrl       String?          @map("certificate_url")
+  verifiedBy           String?          @map("verified_by")
+  verifiedAt           DateTime?        @map("verified_at")
+  notes                String?
+  
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+  
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requirement ComplianceRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, requirementId])
+  @@map("driver_compliance")
+}
+
+model DriverDocument {
+  id              String       @id @default(cuid())
+  userId          String       @map("user_id")
+  fleetId         String       @map("fleet_id")
+  documentType    DocumentType @map("document_type")
+  documentNumber  String?      @map("document_number")
+  issuedDate      DateTime?    @map("issued_date")
+  expirationDate  DateTime     @map("expiration_date")
+  issuingState    String?      @map("issuing_state")
+  issuingCountry  String?      @map("issuing_country")
+  
+  // CDL-specific
+  cdlClass        String?      @map("cdl_class") // A, B, C
+  endorsements    String[]     @default([]) // H, N, T, X, P, S
+  restrictions    String[]     @default([]) // L, Z, E, O, M, N, V
+  
+  // File storage
+  frontImageUrl   String?      @map("front_image_url")
+  backImageUrl    String?      @map("back_image_url")
+  
+  // Status
+  status          String       @default("valid") // valid, expiring_soon, expired
+  verifiedAt      DateTime?    @map("verified_at")
+  verifiedBy      String?      @map("verified_by")
+  
+  // Alert tracking
+  lastAlertSent   DateTime?    @map("last_alert_sent")
+  alertsSent      Int          @default(0) @map("alerts_sent")
+  
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fleet Fleet @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  
+  @@map("driver_documents")
+}
+
+// ============================================
+// BEHIND-THE-WHEEL TRAINING
+// ============================================
+
+model BtwSession {
+  id              String   @id @default(cuid())
+  traineeId       String   @map("trainee_id")
+  trainerId       String   @map("trainer_id")
+  sessionDate     DateTime @map("session_date")
+  startTime       DateTime @map("start_time")
+  endTime         DateTime @map("end_time")
+  totalMinutes    Int      @map("total_minutes")
+  
+  // Session details
+  routeType       String   @map("route_type") // city, highway, rural, backing, dock
+  vehicleType     String?  @map("vehicle_type")
+  vehicleId       String?  @map("vehicle_id")
+  startLocation   String?  @map("start_location")
+  endLocation     String?  @map("end_location")
+  
+  // Skills checklist (JSON)
+  skillsChecklist Json     @map("skills_checklist")
+  // Example: { "pre_trip": true, "backing": true, "shifting": true, "lane_change": false }
+  
+  // Evaluation
+  overallRating   Int?     @map("overall_rating") // 1-5
+  trainerNotes    String?  @map("trainer_notes")
+  areasForImprovement String? @map("areas_for_improvement")
+  
+  // Signatures
+  trainerSignature  String?   @map("trainer_signature")
+  trainerSignedAt   DateTime? @map("trainer_signed_at")
+  traineeSignature  String?   @map("trainee_signature")
+  traineeSignedAt   DateTime? @map("trainee_signed_at")
+  
+  // Status
+  status          String   @default("pending") // pending, completed, cancelled
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  trainee User @relation("TraineeSessions", fields: [traineeId], references: [id], onDelete: Cascade)
+  trainer User @relation("TrainerSessions", fields: [trainerId], references: [id], onDelete: Cascade)
+  
+  @@map("btw_sessions")
+}
+
+// ============================================
+// NOTIFICATIONS & COMMUNICATION
+// ============================================
+
+model Notification {
+  id                   String              @id @default(cuid())
+  message              String
+  title                String?
+  notificationType     String              @map("notification_type")
+  channel              NotificationChannel @default(IN_APP)
+  isRead               Boolean             @default(false) @map("is_read")
+  isSent               Boolean             @default(false) @map("is_sent")
+  sentAt               DateTime?           @map("sent_at")
+  userId               String              @map("user_id")
+  fleetId              String?             @map("fleet_id")
+  relatedAssignmentId  String?             @map("related_assignment_id")
+  
+  // For actionable notifications
+  actionUrl            String?             @map("action_url")
+  actionLabel          String?             @map("action_label")
+  
+  // Delivery tracking
+  deliveryStatus       String?             @map("delivery_status") // pending, sent, delivered, failed
+  deliveryError        String?             @map("delivery_error")
+  
+  createdAt            DateTime            @default(now()) @map("created_at")
+
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fleet             Fleet?      @relation(fields: [fleetId], references: [id])
+  relatedAssignment Assignment? @relation(fields: [relatedAssignmentId], references: [id])
+
+  @@map("notifications")
+}
+
+model PushDevice {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  deviceToken  String   @unique @map("device_token")
+  platform     String   // ios, android, web
+  deviceName   String?  @map("device_name")
+  appVersion   String?  @map("app_version")
+  isActive     Boolean  @default(true) @map("is_active")
+  lastUsedAt   DateTime @default(now()) @map("last_used_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("push_devices")
+}
+
+model Reminder {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  reminderDate    DateTime  @map("reminder_date")
+  reminderTime    String?   @map("reminder_time") // "09:00"
+  isRecurring     Boolean   @default(false) @map("is_recurring")
+  recurrence      String?   // daily, weekly, monthly
+  recurrenceEnd   DateTime? @map("recurrence_end")
+  
+  userId          String    @map("user_id")
+  createdBy       String    @map("created_by")
+  
+  isCompleted     Boolean   @default(false) @map("is_completed")
+  completedAt     DateTime? @map("completed_at")
+  isSnoozed       Boolean   @default(false) @map("is_snoozed")
+  snoozedUntil    DateTime? @map("snoozed_until")
+  
+  // Notification channels
+  notifyEmail     Boolean   @default(false) @map("notify_email")
+  notifySms       Boolean   @default(false) @map("notify_sms")
+  notifyPush      Boolean   @default(true) @map("notify_push")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  user    User @relation("UserReminders", fields: [userId], references: [id], onDelete: Cascade)
+  creator User @relation("CreatedReminders", fields: [createdBy], references: [id])
+  
+  @@map("reminders")
+}
+
+// ============================================
+// WEBHOOKS & INTEGRATIONS
+// ============================================
+
+model Webhook {
+  id              String              @id @default(cuid())
+  name            String
+  url             String
+  secret          String?             // for signature verification
+  events          WebhookEventType[]
+  isActive        Boolean             @default(true) @map("is_active")
+  fleetId         String              @map("fleet_id")
+  createdBy       String              @map("created_by")
+  
+  // Headers to send with webhook
+  headers         Json?
+  
+  // Retry configuration
+  maxRetries      Int                 @default(3) @map("max_retries")
+  retryDelayMs    Int                 @default(1000) @map("retry_delay_ms")
+  
+  // Stats
+  lastTriggeredAt DateTime?           @map("last_triggered_at")
+  successCount    Int                 @default(0) @map("success_count")
+  failureCount    Int                 @default(0) @map("failure_count")
+  
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  
+  fleet      Fleet             @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  creator    User              @relation(fields: [createdBy], references: [id])
+  deliveries WebhookDelivery[]
+  
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id            String   @id @default(cuid())
+  webhookId     String   @map("webhook_id")
+  event         WebhookEventType
+  payload       Json
+  
+  // Response tracking
+  responseStatus Int?    @map("response_status")
+  responseBody   String? @map("response_body")
+  responseTimeMs Int?    @map("response_time_ms")
+  
+  // Delivery status
+  success       Boolean
+  attempts      Int      @default(1)
+  lastAttemptAt DateTime @default(now()) @map("last_attempt_at")
+  errorMessage  String?  @map("error_message")
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  
+  @@index([webhookId, createdAt])
+  @@map("webhook_deliveries")
+}
+
+model TrainingTrigger {
+  id                  String   @id @default(cuid())
+  name                String
+  description         String?
+  eventType           String   @map("event_type") // from telematics: hard_brake, speeding, etc.
+  eventSource         String   @map("event_source") // samsara, motive, manual
+  
+  // Threshold configuration
+  threshold           Json?    // { "count": 3, "period": "7d" } or { "severity": "high" }
+  
+  // What to assign
+  trainingProgramId   String   @map("training_program_id")
+  fleetId             String   @map("fleet_id")
+  
+  // Assignment settings
+  dueDays             Int      @default(7) @map("due_days") // days to complete after trigger
+  priority            String   @default("high")
+  autoAssign          Boolean  @default(true) @map("auto_assign")
+  notifySupervisor    Boolean  @default(true) @map("notify_supervisor")
+  notifyDriver        Boolean  @default(true) @map("notify_driver")
+  
+  isActive            Boolean  @default(true) @map("is_active")
+  
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  
+  trainingProgram TrainingProgram     @relation(fields: [trainingProgramId], references: [id])
+  fleet           Fleet               @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  assignments     TriggerAssignment[]
+  
+  @@map("training_triggers")
+}
+
+model TriggerAssignment {
+  id              String   @id @default(cuid())
+  triggerId       String   @map("trigger_id")
+  userId          String   @map("user_id")
+  eventData       Json     @map("event_data") // original event from telematics
+  assignmentId    String?  @map("assignment_id")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  
+  trigger TrainingTrigger @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("trigger_assignments")
+}
+
+// ============================================
+// REPORTING
+// ============================================
+
+model ScheduledReport {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  reportType      String   @map("report_type") // training_summary, compliance, driver_progress
+  
+  // Schedule (cron expression)
+  schedule        String   // "0 8 * * MON" = 8am every Monday
+  timezone        String   @default("America/New_York")
+  
+  // Recipients
+  recipients      String[] // email addresses
+  
+  // Report configuration
+  filters         Json?    // { "locations": [], "dateRange": "last_30_days" }
+  format          String   @default("pdf") // pdf, csv, excel
+  
+  isActive        Boolean  @default(true) @map("is_active")
+  fleetId         String   @map("fleet_id")
+  createdBy       String   @map("created_by")
+  
+  // Execution tracking
+  lastRunAt       DateTime? @map("last_run_at")
+  lastRunStatus   String?   @map("last_run_status") // success, failed
+  lastRunError    String?   @map("last_run_error")
+  nextRunAt       DateTime? @map("next_run_at")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  fleet   Fleet @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  creator User  @relation(fields: [createdBy], references: [id])
+  
+  @@map("scheduled_reports")
+}
+
+// ============================================
+// DRIVER STATS & GAMIFICATION
+// ============================================
+
+model DriverStats {
+  id                      String    @id @default(cuid())
+  userId                  String    @unique @map("user_id")
+  
+  // Training stats
+  totalTrainingsCompleted Int       @default(0) @map("total_trainings_completed")
+  totalLessonsCompleted   Int       @default(0) @map("total_lessons_completed")
+  totalQuizzesTaken       Int       @default(0) @map("total_quizzes_taken")
+  averageQuizScore        Float?    @map("average_quiz_score")
+  highestQuizScore        Int?      @map("highest_quiz_score")
+  totalTimeSpent          Int       @default(0) @map("total_time_spent") // minutes
+  
+  // Streaks
+  currentStreak           Int       @default(0) @map("current_streak") // consecutive days
+  longestStreak           Int       @default(0) @map("longest_streak")
+  lastActivityDate        DateTime? @map("last_activity_date")
+  
+  // Rankings
+  overallRank             Int?      @map("overall_rank")
+  fleetRank               Int?      @map("fleet_rank")
+  locationRank            Int?      @map("location_rank")
+  
+  // Compliance
+  complianceScore         Float?    @map("compliance_score") // percentage
+  overdueCount            Int       @default(0) @map("overdue_count")
+  
+  // BTW stats
+  btwHoursCompleted       Float     @default(0) @map("btw_hours_completed")
+  btwSessionsCompleted    Int       @default(0) @map("btw_sessions_completed")
+  
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("driver_stats")
+}
+
+// ============================================
+// AUDIT LOGGING
+// ============================================
+
 model AuditLog {
   id         String   @id @default(cuid())
   action     String
   entityType String   @map("entity_type")
   entityId   String   @map("entity_id")
   details    String?
+  
+  // Additional context
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  
   timestamp  DateTime @default(now())
   userId     String   @map("user_id")
   fleetId    String?  @map("fleet_id")
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   fleet Fleet? @relation(fields: [fleetId], references: [id])
-
+  
+  @@index([entityType, entityId])
+  @@index([userId, timestamp])
   @@map("audit_logs")
 }
