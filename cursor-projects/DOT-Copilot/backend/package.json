@@ -43,6 +43,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
@@ -55,6 +56,8 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^10.0.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-security": "^3.0.1",
     "jest": "^30.2.0",
     "nodemon": "^3.1.7",
     "supertest": "^7.1.4",

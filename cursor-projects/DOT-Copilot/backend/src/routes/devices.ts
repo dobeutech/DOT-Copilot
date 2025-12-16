@@ -1,0 +1,121 @@
+import { Router, Response } from 'express';
+import { authenticate, AuthenticatedRequest } from '../middleware/auth';
+import pushNotificationService from '../services/pushNotification';
+import { z } from 'zod';
+
+const router = Router();
+
+router.use(authenticate);
+
+const registerDeviceSchema = z.object({
+  deviceToken: z.string().min(1),
+  platform: z.enum(['ios', 'android', 'web']),
+  deviceName: z.string().optional(),
+  appVersion: z.string().optional(),
+});
+
+/**
+ * @swagger
+ * /api/devices:
+ *   post:
+ *     summary: Register a device for push notifications
+ *     tags: [Devices]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - deviceToken
+ *               - platform
+ *             properties:
+ *               deviceToken:
+ *                 type: string
+ *               platform:
+ *                 type: string
+ *                 enum: [ios, android, web]
+ *               deviceName:
+ *                 type: string
+ *               appVersion:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Device registered successfully
+ */
+router.post('/', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const validated = registerDeviceSchema.parse(req.body);
+    const user = req.user!;
+
+    await pushNotificationService.registerDevice(
+      user.userId,
+      validated.deviceToken,
+      validated.platform,
+      validated.deviceName,
+      validated.appVersion
+    );
+
+    res.json({ message: 'Device registered successfully' });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    console.error('Register device error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/devices/{token}:
+ *   delete:
+ *     summary: Unregister a device
+ *     tags: [Devices]
+ */
+router.delete('/:token', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { token } = req.params;
+
+    await pushNotificationService.unregisterDevice(token);
+
+    res.json({ message: 'Device unregistered successfully' });
+  } catch (error: any) {
+    console.error('Unregister device error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/devices/test:
+ *   post:
+ *     summary: Send a test push notification to the current user
+ *     tags: [Devices]
+ */
+router.post('/test', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user!;
+
+    const results = await pushNotificationService.sendToUser(user.userId, {
+      title: 'Test Notification',
+      body: 'This is a test push notification from DOT Copilot!',
+      data: { type: 'test' },
+    });
+
+    res.json({
+      message: 'Test notification sent',
+      results: results.map(r => ({
+        success: r.success,
+        error: r.error,
+      })),
+    });
+  } catch (error: any) {
+    console.error('Test notification error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+export default router;
